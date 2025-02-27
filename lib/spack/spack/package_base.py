@@ -15,6 +15,7 @@ import functools
 import glob
 import hashlib
 import importlib
+import inspect
 import io
 import os
 import re
@@ -22,6 +23,7 @@ import sys
 import textwrap
 import time
 import traceback
+from functools import wraps
 from typing import (
     Any,
     Callable,
@@ -521,6 +523,23 @@ class DisableRedistribute:
         self.binary = binary
 
 
+def auto_find_interface(func):
+    """Adds the features and virtual keyword arguments with defaults, so users don't have to
+    write it if they don't use it."""
+
+    @wraps(func)
+    def wrapper(self, *, features: Sequence[str] = (), virtual: Optional[str] = None):
+        sig = inspect.signature(func)
+        kwargs: Dict[str, Any] = {}
+        if "features" in sig.parameters:
+            kwargs["features"] = features
+        if "virtual" in sig.parameters:
+            kwargs["virtual"] = virtual
+        return func(self, **kwargs)
+
+    return wrapper
+
+
 class PackageBase(WindowsRPath, PackageViewMixin, metaclass=PackageMeta):
     """This is the superclass for all spack packages.
 
@@ -758,6 +777,12 @@ class PackageBase(WindowsRPath, PackageViewMixin, metaclass=PackageMeta):
 
         self.win_rpath = fsys.WindowsSimulatedRPath(self)
         super().__init__()
+
+    def __init_subclass__(cls):
+        if "find_libs" in cls.__dict__:
+            cls.find_libs = auto_find_interface(cls.find_libs)
+        if "find_headers" in cls.__dict__:
+            cls.find_headers = auto_find_interface(cls.find_headers)
 
     def __getitem__(self, key: str) -> "PackageBase":
         return self.spec[key].package
