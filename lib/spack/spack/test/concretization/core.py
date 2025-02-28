@@ -3249,7 +3249,6 @@ def test_spec_unification(unify, mutable_config, mock_packages):
         (f"git-ref-package@main commit={'a' * 39}", False, AssertionError),
         (f"git-ref-package@2.1.6 commit={'a' * 40}", False, AssertionError),
         (f"git-ref-package@git.2.1.6=2.1.6 commit={'a' * 40}", True, None),
-        (f"git-ref-package@2.1.6 commit={'a' * 40}", False, AssertionError),
     ],
 )
 def test_spec_containing_commit_variant(spec_str, should_pass, error_type):
