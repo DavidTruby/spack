@@ -3786,6 +3786,12 @@ class SpecBuilder:
 
 
 def _specs_with_commits(spec):
+    # StandardVersions paired to git branches or tags and GitVersions
+    if not spec.version.needs_commit:
+        return
+    spec.package.resolve_binary_provenance()
+
+    # method above is in charge of assigning the commit variant
     has_commit_var = "commit" in spec.variants
     has_git_version = isinstance(spec.version, vn.GitVersion)
 
@@ -3812,13 +3818,7 @@ def _specs_with_commits(spec):
         if not spec.version.commit_sha:
             # TODO(psakiev) this will be a failure when commit look up is automated
             return
-
         spec.variants["commit"] = vt.SingleValuedVariant("commit", spec.version.commit_sha)
-    else:
-        # if we are not a GitVersion then only versions with a branch or tag should be
-        # allowed to have the commit variant
-        version_dict = spec.package_class.versions.get(spec.version, {})
-        assert version_dict.get("branch") or version_dict.get("tag")
 
 
 def _inject_patches_variant(root: spack.spec.Spec) -> None:
