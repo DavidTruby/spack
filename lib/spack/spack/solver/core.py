@@ -33,14 +33,14 @@ class AspObject:
 
 def _id(thing: Any) -> Union[str, AspObject]:
     """Quote string if needed for it to be a valid identifier."""
-    if isinstance(thing, AspObject):
+    if isinstance(thing, bool):
+        return f'"{thing}"'
+    elif isinstance(thing, (AspObject, int)):
         return thing
-    elif isinstance(thing, bool):
-        return f'"{str(thing)}"'
-    elif isinstance(thing, int):
-        return str(thing)
     else:
-        return f'"{str(thing)}"'
+        if isinstance(thing, str):
+            thing = thing.replace("\n", r"\n")
+        return f'"{thing}"'
 
 
 class AspVar(AspObject):
@@ -90,26 +90,9 @@ class AspFunction(AspObject):
         """
         return AspFunction(self.name, self.args + args)
 
-    def _argify(self, arg: Any) -> Any:
-        """Turn the argument into an appropriate clingo symbol"""
-        if isinstance(arg, bool):
-            return clingo().String(str(arg))
-        elif isinstance(arg, int):
-            return clingo().Number(arg)
-        elif isinstance(arg, AspFunction):
-            return clingo().Function(arg.name, [self._argify(x) for x in arg.args], positive=True)
-        elif isinstance(arg, AspVar):
-            return clingo().Variable(arg.name)
-        return clingo().String(str(arg))
-
-    def symbol(self):
-        """Return a clingo symbol for this function"""
-        return clingo().Function(
-            self.name, [self._argify(arg) for arg in self.args], positive=True
-        )
-
     def __str__(self) -> str:
-        return f"{self.name}({', '.join(str(_id(arg)) for arg in self.args)})"
+        args = f"({','.join(str(_id(arg)) for arg in self.args)})" if self.args else ""
+        return f"{self.name}{args}"
 
     def __repr__(self) -> str:
         return str(self)
